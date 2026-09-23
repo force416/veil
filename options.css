@@ -1,0 +1,15 @@
+:root { color-scheme: dark; font-family: system-ui, sans-serif; background: #10151b; color: #e9eef3; }
+body { margin: 0; min-width: 360px; }
+main { max-width: 480px; padding: 26px; margin: auto; }
+.mark { color: #8de2c0; font-weight: 800; letter-spacing: 3px; }
+h1 { font-size: 23px; margin: 14px 0 8px; }
+header p, .hint, footer { color: #a6b4c2; font-size: 12px; line-height: 1.7; }
+form { margin: 24px 0 16px; }
+label { display: block; margin: 18px 0 8px; font-size: 13px; font-weight: 600; }
+input:not([type="checkbox"]), textarea { box-sizing: border-box; width: 100%; border: 1px solid #35424f; border-radius: 8px; background: #18212a; padding: 11px; color: inherit; font: inherit; font-size: 14px; }
+textarea { resize: vertical; }
+input:focus, textarea:focus { outline: 2px solid #8de2c0; }
+.switch { display: flex; gap: 10px; align-items: center; }
+button { width: 100%; padding: 12px; border: 0; border-radius: 8px; background: #8de2c0; color: #10291f; font-weight: 700; cursor: pointer; margin-top: 14px; }
+#message { font-size: 13px; color: #8de2c0; min-height: 20px; }
+footer { border-top: 1px solid #35424f; padding-top: 16px; }
