@@ -6,12 +6,12 @@ A Chrome extension that uses [Jev](https://docs.typesafe.ai) to hide replies und
 
 1. Open `chrome://extensions` in Chrome and turn on **Developer mode**.
 2. Click **Load unpacked** and select this project folder (the one containing `manifest.json`).
-3. Click the extension icon, enter your own TypeSafe API key, a filter condition, and a threshold, check **Enable**, and save.
+3. Click the extension icon, enter your own TypeSafe API key, a filter condition, and a threshold, then turn on the **Filter replies** switch. The switch saves your settings as soon as you flip it.
 4. Reload any open X tabs and open a post. A badge in the bottom-right corner shows how many replies are currently hidden.
 
 Example condition: *"Product promotion, invitations to investment groups, and scams. Keep normal discussion and replies that quote a scam to warn others."*
 
-Setting changes apply to open tabs within about two seconds, without reloading. Disabling and saving restores all replies. To see the original replies without turning filtering off, uncheck **Hide filtered replies**. It takes effect right away, reuses existing judgments, and makes no new API calls. The badge then shows how many replies matched. Filtering is local `display: none` only; nothing is deleted or reported on X.
+Setting changes apply to open tabs within about two seconds, without reloading. Turning the switch off stops filtering and shows the original replies. Turning it back on reuses judgments already cached by the background worker, so replies that were already checked aren't sent again. Filtering is local `display: none` only; nothing is deleted or reported on X.
 
 ## Behavior and limitations
 

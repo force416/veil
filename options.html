@@ -10,9 +10,8 @@
   <main>
     <header><span class="mark">VEIL</span><h1>Keep your attention on the good replies.</h1><p>Let Jev filter text replies on X based on your own rules.</p></header>
     <form id="settings">
-      <label class="switch"><input id="enabled" type="checkbox"> Enable reply filtering</label>
-      <label class="switch"><input id="hideFiltered" type="checkbox"> Hide filtered replies</label>
-      <p class="hint">Applies right away. Turn off to show the original replies without re-checking them.</p>
+      <label class="switch"><input id="enabled" type="checkbox" role="switch" aria-describedby="enabledHint"> Filter replies</label>
+      <p id="enabledHint" class="hint">On hides matching replies. Off shows the original replies. Saves as soon as you flip it.</p>
       <label for="apiKey">TypeSafe API Key</label>
       <input id="apiKey" type="password" autocomplete="off" placeholder="Paste your API key">
       <label for="rules">What do you want to hide?</label>

@@ -16,10 +16,9 @@ let authError = "";
 let lastError = "";
 
 chrome.storage.onChanged.addListener(changes => {
-  // Showing or hiding matched replies is display-only; keep cached judgments.
-  if (Object.keys(changes).every(key => key === "hideFiltered")) return;
   epoch++;
-  cache.clear();
+  // Cached probabilities don't depend on the on/off state, so flipping the switch back on reuses them.
+  if (!("enabled" in changes && Object.keys(changes).every(key => key === "enabled" || key === "revision"))) cache.clear();
   pending.clear();
   retryAfter = 0;
   authError = "";
@@ -87,9 +86,9 @@ function request(key, apiKey, rules, post, reply) {
 async function handle(message) {
   await ready;
   const settings = await chrome.storage.local.get({ ...DEFAULTS, revision: 0 });
-  const { hideFiltered, ...config } = publicSettings(settings);
+  const config = publicSettings(settings);
   const revision = JSON.stringify([config, settings.revision]);
-  if (message.type === "config") return { ...config, hideFiltered, revision, lastError };
+  if (message.type === "config") return { ...config, revision, lastError };
   if (message.type !== "evaluate" || !config.enabled || message.revision !== revision) return { skipped: true };
   const { post, reply } = message;
   if (typeof post !== "string" || typeof reply !== "string" || !reply.trim() || post.length > 12000 || reply.length > 12000) {
