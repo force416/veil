@@ -41,7 +41,7 @@ function send(message) {
 // Simulates saving settings and returns a request bound to the new revision.
 async function fresh(next = () => response(200)) {
   settings.revision++;
-  changed();
+  changed({ revision: {} });
   respond = next;
   calls = 0;
   const { revision } = await send({ type: "config" });
@@ -63,7 +63,7 @@ test("設定隔離、門檻、快取與過期結果", async () => {
   assert.equal(calls, 1);
   settings.revision++;
   settings.threshold = 0.95;
-  changed();
+  changed({ revision: {} });
   assert.equal((await send(request)).skipped, true);
   request.revision = (await send({ type: "config" })).revision;
   assert.equal((await send(request)).hide, false);
@@ -129,6 +129,19 @@ test("422 只影響該則留言，不暫停其他請求", async () => {
   respond = () => response(200);
   assert.equal((await send({ ...request, reply: "another" })).hide, true);
   assert.equal(calls, 2);
+});
+
+test("切換是否隱藏已過濾留言不會清除快取或改變 revision", async () => {
+  const request = await fresh();
+  assert.equal((await send(request)).hide, true);
+  settings.hideFiltered = false;
+  changed({ hideFiltered: { oldValue: true, newValue: false } });
+  const config = await send({ type: "config" });
+  assert.equal(config.hideFiltered, false);
+  assert.equal(config.revision, request.revision);
+  assert.equal((await send(request)).hide, true);
+  assert.equal(calls, 1);
+  delete settings.hideFiltered;
 });
 
 test("停用後不送出請求", async () => {
