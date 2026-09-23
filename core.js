@@ -60,7 +60,7 @@ export function backoffDelay(attempt, retryAfterMs = 0) {
 export function parseProbability(body) {
   const answer = body?.answers?.hide;
   if (answer?.type !== "noul" || !Number.isFinite(answer.noul) || answer.noul < 0 || answer.noul > 1) {
-    throw jevError("Jev 回傳格式不正確，已保留留言。", "reject");
+    throw jevError("Jev returned an invalid response. Reply kept.", "reject");
   }
   return answer.noul;
 }
@@ -79,15 +79,15 @@ export async function evaluate(apiKey, rules, post, reply, fetcher = fetch) {
     });
     if (!response.ok) {
       const kind = classifyStatus(response.status);
-      const hint = kind === "auth" ? "請檢查 API Key" : "已保留留言";
-      throw jevError(`Jev HTTP ${response.status}，${hint}。`, kind, parseRetryAfter(response.headers?.get?.("retry-after")));
+      const hint = kind === "auth" ? "check your API Key" : "reply kept";
+      throw jevError(`Jev HTTP ${response.status}, ${hint}.`, kind, parseRetryAfter(response.headers?.get?.("retry-after")));
     }
     body = await response.json();
   } catch (error) {
     if (error.kind) throw error;
-    if (error.name === "AbortError") throw jevError("Jev 請求逾時，已保留留言。", "retry");
-    if (!response) throw jevError("無法連線 Jev，已保留留言。", "retry");
-    throw jevError("Jev 回傳格式不正確，已保留留言。", "reject");
+    if (error.name === "AbortError") throw jevError("Jev request timed out. Reply kept.", "retry");
+    if (!response) throw jevError("Couldn't reach Jev. Reply kept.", "retry");
+    throw jevError("Jev returned an invalid response. Reply kept.", "reject");
   } finally {
     clearTimeout(timeout);
   }
