@@ -49,7 +49,7 @@ test("HTTP、網路、非 JSON 與逾時錯誤不產生隱藏決策，並依可�
   await assert.rejects(evaluate("k", "r", "p", "c", async () => { throw new TypeError("network"); }), { kind: "retry" });
   await assert.rejects(evaluate("k", "r", "p", "c", async () => ({ ok: true, json: async () => { throw new SyntaxError(); } })), { kind: "reject" });
   await assert.rejects(evaluate("k", "r", "p", "c", async () => ({ ok: true, json: async () => ({}) })), { kind: "reject" });
-  await assert.rejects(evaluate("k", "r", "p", "c", async () => { throw new DOMException("aborted", "AbortError"); }), { kind: "retry", message: /逾時/ });
+  await assert.rejects(evaluate("k", "r", "p", "c", async () => { throw new DOMException("aborted", "AbortError"); }), { kind: "retry", message: /timed out/ });
 });
 
 test("讀取 retry-after 標頭並計算退避時間", async () => {

@@ -112,6 +112,6 @@ async function handle(message) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id || !["config", "evaluate"].includes(message?.type)) return;
   if (message.type === "evaluate" && !/^https:\/\/(www\.)?(x\.com|twitter\.com)\//.test(sender.url || "")) return;
-  handle(message).then(sendResponse, () => sendResponse({ error: "無法執行過濾，請檢查設定與網路。" }));
+  handle(message).then(sendResponse, () => sendResponse({ error: "Couldn't run the filter. Check your settings and network." }));
   return true;
 });

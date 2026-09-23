@@ -24,15 +24,15 @@ form.addEventListener("submit", async event => {
     threshold: Number(fields.threshold.value)
   };
   if (!settings.rules || (settings.enabled && !settings.apiKey)) {
-    message.textContent = "請填寫過濾條件；啟用時也需要 API Key。";
+    message.textContent = "Enter your filter rules. An API key is also required when filtering is enabled.";
     return;
   }
   try {
     await chrome.storage.local.set({ ...settings, revision: Date.now() });
-    message.textContent = "已儲存，開啟中的 X 頁面會在兩秒內套用。";
+    message.textContent = "Saved. Open X tabs will apply the change within two seconds.";
   } catch {
-    message.textContent = "儲存失敗，請重新開啟設定頁。";
+    message.textContent = "Couldn't save. Reopen the settings page and try again.";
   }
 });
 
-load().catch(() => { message.textContent = "讀取設定失敗，請重新載入插件。"; });
+load().catch(() => { message.textContent = "Couldn't load settings. Reload the extension."; });

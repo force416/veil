@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Veil — Jev 留言過濾",
+  "name": "Veil — Jev Reply Filter",
   "version": "0.1.0",
-  "description": "依照你的自然語言條件，使用 Jev 隱藏 X 貼文下的文字留言。",
+  "description": "Hide text replies under X posts with Jev, based on rules you write in plain language.",
   "minimum_chrome_version": "102",
   "permissions": ["storage"],
   "host_permissions": ["https://api.typesafe.ai/*"],

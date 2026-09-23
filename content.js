@@ -40,7 +40,7 @@
       document.body.append(notice);
     }
     const count = document.querySelectorAll('[data-veil-hidden="true"]').length;
-    const text = error ? `Veil：${error}` : `Veil · 目前隱藏 ${count} 則留言`;
+    const text = error ? `Veil: ${error}` : `Veil · ${count} ${count === 1 ? "reply" : "replies"} hidden`;
     if (notice.textContent !== text) notice.textContent = text;
   }
 
@@ -99,7 +99,7 @@
           if (result?.hide && result.revision === config.revision) article.setAttribute("data-veil-hidden", "true");
           showStatus(result?.error);
         })
-        .catch(() => showStatus("連線失敗，已保留留言。"))
+        .catch(() => showStatus("Connection failed. Reply kept."))
         .finally(() => { inFlight--; });
     }
   }
