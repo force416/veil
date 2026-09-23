@@ -131,17 +131,23 @@ test("422 只影響該則留言，不暫停其他請求", async () => {
   assert.equal(calls, 2);
 });
 
-test("切換是否隱藏已過濾留言不會清除快取或改變 revision", async () => {
+test("關閉再開啟過濾開關會沿用快取，其他設定變更才清除", async () => {
   const request = await fresh();
   assert.equal((await send(request)).hide, true);
-  settings.hideFiltered = false;
-  changed({ hideFiltered: { oldValue: true, newValue: false } });
-  const config = await send({ type: "config" });
-  assert.equal(config.hideFiltered, false);
-  assert.equal(config.revision, request.revision);
+  settings.enabled = false;
+  settings.revision++;
+  changed({ enabled: {}, revision: {} });
+  settings.enabled = true;
+  settings.revision++;
+  changed({ enabled: {}, revision: {} });
+  request.revision = (await send({ type: "config" })).revision;
   assert.equal((await send(request)).hide, true);
   assert.equal(calls, 1);
-  delete settings.hideFiltered;
+  settings.revision++;
+  changed({ enabled: {}, rules: {}, revision: {} });
+  request.revision = (await send({ type: "config" })).revision;
+  assert.equal((await send(request)).hide, true);
+  assert.equal(calls, 2);
 });
 
 test("停用後不送出請求", async () => {

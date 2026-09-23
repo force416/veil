@@ -40,8 +40,7 @@
       document.body.append(notice);
     }
     const count = document.querySelectorAll('[data-veil-hidden="true"]').length;
-    const status = config.hideFiltered === false ? "matched, shown" : "hidden";
-    const text = error ? `Veil: ${error}` : `Veil · ${count} ${count === 1 ? "reply" : "replies"} ${status}`;
+    const text = error ? `Veil: ${error}` : `Veil · ${count} ${count === 1 ? "reply" : "replies"} hidden`;
     if (notice.textContent !== text) notice.textContent = text;
   }
 
@@ -51,7 +50,6 @@
       if (!next?.revision) return;
       if (next.revision !== config?.revision) reset();
       config = next;
-      document.documentElement.toggleAttribute("data-veil-reveal", config.hideFiltered === false);
       scan();
     } catch {
       config = null;
