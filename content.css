@@ -1,4 +1,4 @@
-article[data-veil-hidden="true"] { display: none !important; }
+html:not([data-veil-reveal]) article[data-veil-hidden="true"] { display: none !important; }
 #veil-status {
   position: fixed; bottom: 18px; right: 18px; z-index: 2147483647;
   padding: 10px 14px; border: 1px solid #536471; border-radius: 12px;

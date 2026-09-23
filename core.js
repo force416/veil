@@ -2,14 +2,16 @@ export const DEFAULTS = {
   enabled: false,
   apiKey: "",
   rules: "Commercial ads, promotional spam that tries to drive traffic, or scam replies. Normal discussion and replies that quote an ad to criticize it don't count.",
-  threshold: 0.85
+  threshold: 0.85,
+  hideFiltered: true
 };
 
 export function publicSettings(settings) {
   return {
     enabled: settings.enabled === true && Boolean(settings.apiKey) && Boolean(settings.rules?.trim()),
     rules: settings.rules,
-    threshold: settings.threshold
+    threshold: settings.threshold,
+    hideFiltered: settings.hideFiltered !== false
   };
 }
 

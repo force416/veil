@@ -11,7 +11,7 @@ A Chrome extension that uses [Jev](https://docs.typesafe.ai) to hide replies und
 
 Example condition: *"Product promotion, invitations to investment groups, and scams. Keep normal discussion and replies that quote a scam to warn others."*
 
-Setting changes apply to open tabs within about two seconds, without reloading. Disabling and saving restores all replies. Filtering is local `display: none` only; nothing is deleted or reported on X.
+Setting changes apply to open tabs within about two seconds, without reloading. Disabling and saving restores all replies. To see the original replies without turning filtering off, uncheck **Hide filtered replies**. It takes effect right away, reuses existing judgments, and makes no new API calls. The badge then shows how many replies matched. Filtering is local `display: none` only; nothing is deleted or reported on X.
 
 ## Behavior and limitations
 

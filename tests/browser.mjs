@@ -35,6 +35,16 @@ try {
   assert.equal(await page.locator("#tweet-900").isVisible(), true);
   assert.equal(await page.locator("#tweet-101").isVisible(), false);
 
+  // Turning off "hide filtered replies" shows originals without re-evaluating.
+  await page.evaluate(() => { window.config.hideFiltered = false; });
+  await page.waitForFunction(() => document.documentElement.hasAttribute("data-veil-reveal"));
+  assert.equal(await page.locator("#tweet-101").isVisible(), true);
+  assert.match(await page.locator("#veil-status").textContent(), /matched, shown/);
+  await page.evaluate(() => { window.config.hideFiltered = true; });
+  await page.waitForFunction(() => !document.documentElement.hasAttribute("data-veil-reveal"));
+  assert.equal(await page.locator("#tweet-101").isVisible(), false);
+  assert.equal(await page.evaluate(() => window.calls.length), 2);
+
   // Root virtualizes away; new replies still use the previously captured main text.
   await page.evaluate(html => {
     document.querySelector("#tweet-100").remove();
@@ -70,7 +80,7 @@ try {
   await page.evaluate(() => { window.config.enabled = false; window.config.revision = "two"; });
   await page.waitForFunction(() => document.querySelectorAll('[data-veil-hidden]').length === 0);
   assert.equal(await page.locator("#tweet-201").isVisible(), true);
-  console.log("PASS: main/ancestor/sidebar protection, filtering, virtualization, recycled DOM, SPA stale response, recommendation boundary, disable restore");
+  console.log("PASS: main/ancestor/sidebar protection, filtering, show/hide toggle, virtualization, recycled DOM, SPA stale response, recommendation boundary, disable restore");
 
   await page.goto("https://x.com/options-preview");
   await page.setContent(await (await import("node:fs/promises")).readFile("options.html", "utf8"));

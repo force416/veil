@@ -7,6 +7,8 @@ test("未設定金鑰時不啟用，公開設定不洩漏金鑰", () => {
   const config = publicSettings({ ...DEFAULTS, enabled: true, apiKey: "secret" });
   assert.equal(config.enabled, true);
   assert.equal("apiKey" in config, false);
+  assert.equal(config.hideFiltered, true);
+  assert.equal(publicSettings({ ...DEFAULTS, hideFiltered: false }).hideFiltered, false);
 });
 
 test("規則與不可信留言分開，使用 Noul 與正式模型", () => {
