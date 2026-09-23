@@ -1,7 +1,7 @@
 export const DEFAULTS = {
   enabled: false,
   apiKey: "",
-  rules: "商業廣告、導流推銷或詐騙留言。正常討論、引用廣告來批評的留言不算。",
+  rules: "Commercial ads, promotional spam that tries to drive traffic, or scam replies. Normal discussion and replies that quote an ad to criticize it don't count.",
   threshold: 0.85
 };
 
