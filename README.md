@@ -2,8 +2,6 @@
 
 A Chrome extension that uses [Jev](https://docs.typesafe.ai) to hide replies under X / Twitter posts that match a condition you describe in plain language. Vanilla JavaScript, Manifest V3, no build step, no runtime dependencies.
 
-> The extension UI (options page and status badge) is currently in Traditional Chinese.
-
 ## Install
 
 1. Open `chrome://extensions` in Chrome and turn on **Developer mode**.
