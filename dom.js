@@ -4,14 +4,34 @@ globalThis.VeilDOM = (() => {
     return path.match(/^\/[\w]+\/status\/(\d+)\/?$/)?.[1] || null;
   }
 
+  // X renders emoji as <img alt="🍰">, which textContent drops.
+  function readText(node) {
+    let text = "";
+    for (const child of node?.childNodes || []) {
+      if (child.nodeType === Node.TEXT_NODE) text += child.nodeValue;
+      else if (child.nodeName === "IMG") text += child.alt || "";
+      else if (child.nodeType === Node.ELEMENT_NODE) text += readText(child);
+    }
+    return text;
+  }
+
+  // Display name plus @handle. The relative timestamp is left out so it can't change the cache key.
+  function readAuthor(article) {
+    const userName = [...article.querySelectorAll('[data-testid="User-Name"]')].find(node => !node.closest('[role="link"]'));
+    const profile = userName?.querySelector('a[href^="/"]:not([href*="/status/"])');
+    if (!profile) return "";
+    const handle = new URL(profile.href, "https://x.com").pathname.slice(1);
+    return `${readText(profile).replace(/\s+/g, " ").trim()} (@${handle})`;
+  }
+
   function readArticle(article) {
     // A timestamp permalink identifies the outer tweet, excluding quoted cards.
     const time = article.querySelector('a[href*="/status/"] > time');
     const link = time?.parentElement;
     const id = link && statusId(new URL(link.href, "https://x.com").pathname);
     const textNode = [...article.querySelectorAll('[data-testid="tweetText"]')].find(node => !node.closest('[role="link"]'));
-    const text = textNode?.textContent?.trim() || "";
-    return { id, text };
+    const text = readText(textNode).trim();
+    return { id, text, author: readAuthor(article) };
   }
 
   function collect(document, threadId) {

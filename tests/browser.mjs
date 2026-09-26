@@ -43,6 +43,13 @@ try {
   await page.waitForFunction(() => document.querySelector("#tweet-103").dataset.veilHidden === "true");
   assert.equal(await page.evaluate(() => window.calls.at(-1).post), "main");
 
+  // Emoji images keep their alt text, and the author name and handle are sent without the timestamp.
+  await page.evaluate(() => {
+    document.querySelector("section").insertAdjacentHTML("beforeend", `<article data-testid="tweet" id="tweet-104"><div data-testid="User-Name"><a href="/bot"><span>严丽<img alt="🌸">同城上门</span></a><a href="/bot">@bot</a><a href="/bot/status/104"><time>8h</time></a></div><div data-testid="tweetText">玩的开<img alt="🍰">ad</div></article>`);
+  });
+  await page.waitForFunction(() => window.calls.some(call => call.reply === "玩的开🍰ad"));
+  assert.equal(await page.evaluate(() => window.calls.find(call => call.reply === "玩的开🍰ad").author), "严丽🌸同城上门 (@bot)");
+
   // React reuses the hidden element for an ordinary reply.
   await page.evaluate(() => {
     const node = document.querySelector("#tweet-101");

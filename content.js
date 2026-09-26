@@ -92,7 +92,7 @@
       inFlight++;
       const token = generation;
       const path = location.pathname;
-      chrome.runtime.sendMessage({ type: "evaluate", revision: config.revision, post, reply: value.text })
+      chrome.runtime.sendMessage({ type: "evaluate", revision: config.revision, post, reply: value.text, author: value.author })
         .then(result => {
           if (token !== generation || path !== location.pathname || !article.isConnected || JSON.stringify(readArticle(article)) !== signature) return;
           if (result?.retryAt) records.set(article, { signature, retryAt: result.retryAt });
