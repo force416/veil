@@ -70,6 +70,17 @@ test("設定隔離、門檻、快取與過期結果", async () => {
   settings.threshold = 0.85;
 });
 
+test("作者不同視為不同留言，作者格式不符則略過", async () => {
+  const request = await fresh();
+  assert.equal((await send({ ...request, author: "A (@a)" })).hide, true);
+  assert.equal((await send({ ...request, author: "A (@a)" })).hide, true);
+  assert.equal((await send({ ...request, author: "B (@b)" })).hide, true);
+  assert.equal(calls, 2);
+  assert.equal((await send({ ...request, author: 1 })).skipped, true);
+  assert.equal((await send({ ...request, author: "x".repeat(501) })).skipped, true);
+  assert.equal(calls, 2);
+});
+
 test("跨分頁最多同時 4 個請求，相同內容共用同一請求", async () => {
   let running = 0;
   let peak = 0;

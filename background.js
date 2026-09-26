@@ -41,14 +41,14 @@ async function withSlot(task) {
   }
 }
 
-async function callJev(start, apiKey, rules, post, reply) {
+async function callJev(start, apiKey, rules, post, reply, author) {
   for (let attempt = 1; ; attempt++) {
     // Settings may change while this request waits for a slot or a backoff.
     if (epoch !== start) throw tagged("", "stale");
     if (authError) throw tagged(authError, "auth");
     if (Date.now() < retryAfter) throw tagged(lastError, "retry");
     try {
-      return await evaluate(apiKey, rules, post, reply);
+      return await evaluate(apiKey, rules, post, reply, author);
     } catch (error) {
       if (epoch !== start) throw tagged("", "stale");
       lastError = error.message;
@@ -64,10 +64,10 @@ async function callJev(start, apiKey, rules, post, reply) {
   }
 }
 
-function request(key, apiKey, rules, post, reply) {
+function request(key, apiKey, rules, post, reply, author) {
   if (pending.has(key)) return pending.get(key);
   const start = epoch;
-  const promise = withSlot(() => callJev(start, apiKey, rules, post, reply))
+  const promise = withSlot(() => callJev(start, apiKey, rules, post, reply, author))
     .then(probability => {
       if (epoch === start) {
         cache.set(key, probability);
@@ -90,17 +90,17 @@ async function handle(message) {
   const revision = JSON.stringify([config, settings.revision]);
   if (message.type === "config") return { ...config, revision, lastError };
   if (message.type !== "evaluate" || !config.enabled || message.revision !== revision) return { skipped: true };
-  const { post, reply } = message;
-  if (typeof post !== "string" || typeof reply !== "string" || !reply.trim() || post.length > 12000 || reply.length > 12000) {
+  const { post, reply, author = "" } = message;
+  if (typeof post !== "string" || typeof reply !== "string" || typeof author !== "string" || !reply.trim() || post.length > 12000 || reply.length > 12000 || author.length > 500) {
     return { skipped: true };
   }
-  const key = JSON.stringify([settings.apiKey, config.rules, post, reply]);
+  const key = JSON.stringify([settings.apiKey, config.rules, post, reply, author]);
   let probability = cache.get(key);
   if (probability === undefined) {
     if (authError) return { error: authError };
     if (Date.now() < retryAfter) return { error: lastError, retryAt: retryAfter };
     try {
-      probability = await request(key, settings.apiKey, config.rules, post, reply);
+      probability = await request(key, settings.apiKey, config.rules, post, reply, author);
     } catch (error) {
       if (error.kind === "stale") return { skipped: true };
       // Only transient failures tell the page when to ask again; auth and rejected replies wait for new settings.

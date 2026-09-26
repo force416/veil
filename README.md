@@ -17,7 +17,7 @@ Setting changes apply to open tabs within about two seconds, without reloading. 
 
 - Off by default. Only runs in the main column of `/<user>/status/<id>` pages; the main post and the ancestor posts above it are never hidden.
 - Replies are identified from the DOM using tweet articles, timestamp permalinks, and the timeline region. Infinite scroll, recycled DOM nodes, and SPA navigation are supported. Filtering stops at a recommendations section when it has a heading. X has no stable DOM contract, so recommended posts without a heading may still be treated as replies, and site redesigns can break detection. Verify on real pages.
-- Text only: images, videos, media-only posts, and quoted-post cards are not evaluated. Posts or replies longer than 12,000 characters are kept. Judgments take time, so a reply may appear briefly before being hidden.
+- Text only: the model sees the reply text (emoji included), the reply author's display name and @handle, and the main post text as context. Images, videos, avatars, media-only posts, and quoted-post cards are not evaluated. Posts or replies longer than 12,000 characters are kept. Judgments take time, so a reply may appear briefly before being hidden.
 - Uses the Noul probability from `jev-latest` and hides a reply only when it reaches the threshold. The default of 0.85 is a starting point that has not been calibrated on a dataset; the model can be wrong. Jev's accuracy is currently best in English, so test your own content if you filter other languages.
 - One request per reply. At most 4 requests in flight per tab and 4 across all tabs; identical requests are merged. The background worker caches up to 500 results in memory. The cache is lost when the service worker goes idle, so reloading a page may incur charges again.
 - On any API error the reply is kept visible, and errors are handled by type:
@@ -25,7 +25,7 @@ Setting changes apply to open tabs within about two seconds, without reloading. 
   - 401 / 403: invalid key. All requests stop until settings are changed.
   - 422, other errors, and malformed responses: only that reply is skipped; other requests continue.
 - The API key is stored in `chrome.storage.local`, restricted to the extension's trusted contexts. It is not synced and is never exposed to the content script. This is a bring-your-own-key setup for personal use; extension storage is not a password vault. If you publish this with a shared key, move API calls behind a backend proxy instead.
-- Enabling the extension means the main post text, reply text, and your filter condition are sent to TypeSafe. X cookies, account credentials, and page HTML are never sent. API usage may be billed.
+- Enabling the extension means the main post text, reply text, the reply author's display name and @handle, and your filter condition are sent to TypeSafe. X cookies, account credentials, and page HTML are never sent. API usage may be billed.
 
 ## Development
 
