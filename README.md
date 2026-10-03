@@ -22,9 +22,9 @@ Setting changes apply to open tabs within about two seconds, without reloading. 
 - One request per reply. At most 4 requests in flight per tab and 4 across all tabs; identical requests are merged. The background worker caches up to 500 results in memory. The cache is lost when the service worker goes idle, so reloading a page may incur charges again.
 - On any API error the reply is kept visible, and errors are handled by type:
   - 429, 529, 5xx, timeouts, network errors: retried up to 3 times using `retry-after` or exponential backoff (about 1 s, then 2 s). If still failing, new requests pause for at least 60 seconds, after which the affected replies are retried automatically.
-  - 401 / 403: invalid Account ID or API token. All requests stop until settings are changed.
+  - 401 / 403 / 404: invalid API token or Account ID. All requests stop until settings are changed. Error messages include Cloudflare's error code, e.g. 7003 for an Account ID that doesn't exist and 3036 when the daily free allocation is used up.
   - 422, other errors, and malformed responses: only that reply is skipped; other requests continue.
-- The Account ID and API token are stored in `chrome.storage.local`, restricted to the extension's trusted contexts. It is not synced and is never exposed to the content script. This is a bring-your-own-key setup for personal use; extension storage is not a password vault. If you publish this with a shared token, move API calls behind a backend proxy instead.
+- The Account ID and API token are stored in `chrome.storage.local`, restricted to the extension's trusted contexts. They are not synced and are never exposed to the content script. This is a bring-your-own-key setup for personal use; extension storage is not a password vault. If you publish this with a shared token, move API calls behind a backend proxy instead.
 - Enabling the extension means the main post text, reply text, the reply author's display name and @handle, and your filter condition are sent to Cloudflare Workers AI. X cookies, account credentials, and page HTML are never sent. API usage may be billed.
 
 ## Development

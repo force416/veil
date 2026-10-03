@@ -1,4 +1,4 @@
-import { DEFAULTS } from "./core.js";
+import { DEFAULTS, publicSettings } from "./core.js";
 
 const form = document.querySelector("form");
 const message = document.querySelector("#message");
@@ -10,7 +10,8 @@ async function load() {
   await chrome.storage.local.setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" });
   const settings = await chrome.storage.local.get(DEFAULTS);
   for (const [key, field] of Object.entries(fields)) {
-    if (key === "enabled") field.checked = settings[key];
+    // Show the switch as off when missing settings keep filtering off.
+    if (key === "enabled") field.checked = publicSettings(settings).enabled;
     else field.value = settings[key];
   }
   controls.forEach(control => { control.disabled = false; });
@@ -28,11 +29,11 @@ form.addEventListener("submit", async event => {
   const settings = {
     enabled: fields.enabled.checked,
     accountId: fields.accountId.value.trim(),
-    apiKey: fields.apiKey.value.trim(),
+    apiToken: fields.apiToken.value.trim(),
     rules: fields.rules.value.trim(),
     threshold: Number(fields.threshold.value)
   };
-  if (!settings.rules || (settings.enabled && !(settings.accountId && settings.apiKey))) {
+  if (!settings.rules || (settings.enabled && !(settings.accountId && settings.apiToken))) {
     if (!event.submitter) fields.enabled.checked = !settings.enabled;
     message.textContent = "Enter your filter rules. An Account ID and API token are also required when filtering is enabled.";
     return;

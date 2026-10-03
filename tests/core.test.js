@@ -4,11 +4,11 @@ import { backoffDelay, buildRequest, classifyStatus, DEFAULTS, evaluate, parsePr
 
 test("未設定帳號或金鑰時不啟用，公開設定不洩漏金鑰", () => {
   assert.equal(publicSettings({ ...DEFAULTS, enabled: true }).enabled, false);
-  assert.equal(publicSettings({ ...DEFAULTS, enabled: true, apiKey: "secret" }).enabled, false);
+  assert.equal(publicSettings({ ...DEFAULTS, enabled: true, apiToken: "secret" }).enabled, false);
   assert.equal(publicSettings({ ...DEFAULTS, enabled: true, accountId: "acct" }).enabled, false);
-  const config = publicSettings({ ...DEFAULTS, enabled: true, accountId: "acct", apiKey: "secret" });
+  const config = publicSettings({ ...DEFAULTS, enabled: true, accountId: "acct", apiToken: "secret" });
   assert.equal(config.enabled, true);
-  assert.equal("apiKey" in config, false);
+  assert.equal("apiToken" in config, false);
   assert.equal("accountId" in config, false);
 });
 
@@ -45,7 +45,7 @@ test("依官方合約傳送請求並解析成功回應", async () => {
 });
 
 test("HTTP、網路、非 JSON 與逾時錯誤不產生隱藏決策，並依可否重試分類", async () => {
-  const expected = { 400: "reject", 401: "auth", 403: "auth", 408: "retry", 422: "reject", 429: "retry", 500: "retry", 529: "retry" };
+  const expected = { 400: "reject", 401: "auth", 403: "auth", 404: "auth", 408: "retry", 422: "reject", 429: "retry", 500: "retry", 529: "retry" };
   for (const [status, kind] of Object.entries(expected)) {
     await assert.rejects(evaluate("a", "k", "r", "p", "c", "", async () => ({ ok: false, status: Number(status) })), error => {
       assert.match(error.message, new RegExp(status));
@@ -57,6 +57,14 @@ test("HTTP、網路、非 JSON 與逾時錯誤不產生隱藏決策，並依可�
   await assert.rejects(evaluate("a", "k", "r", "p", "c", "", async () => ({ ok: true, json: async () => { throw new SyntaxError(); } })), { kind: "reject" });
   await assert.rejects(evaluate("a", "k", "r", "p", "c", "", async () => ({ ok: true, json: async () => ({}) })), { kind: "reject" });
   await assert.rejects(evaluate("a", "k", "r", "p", "c", "", async () => { throw new DOMException("aborted", "AbortError"); }), { kind: "retry", message: /timed out/ });
+});
+
+test("錯誤訊息附上 Cloudflare 的錯誤碼與說明", async () => {
+  const body = { result: null, success: false, errors: [{ code: 3036, message: "Account limited" }], messages: [] };
+  await assert.rejects(evaluate("a", "k", "r", "p", "c", "", async () => ({ ok: false, status: 429, json: async () => body })), {
+    kind: "retry",
+    message: "Clef HTTP 429 (3036: Account limited), reply kept."
+  });
 });
 
 test("讀取 retry-after 標頭並計算退避時間", async () => {

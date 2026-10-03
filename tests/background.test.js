@@ -4,9 +4,10 @@ import assert from "node:assert/strict";
 let listener;
 let changed;
 let accessLevel;
+let removed;
 let calls = 0;
 let respond;
-const settings = { enabled: true, accountId: "acct", apiKey: "secret", rules: "ads", threshold: 0.85, revision: 1 };
+const settings = { enabled: true, accountId: "acct", apiToken: "secret", rules: "ads", threshold: 0.85, revision: 1 };
 const response = (status, noul = 0.9, headers = {}) => ({
   ok: status === 200,
   status,
@@ -17,6 +18,7 @@ globalThis.chrome = {
   storage: {
     local: {
       setAccessLevel: async value => { accessLevel = value.accessLevel; },
+      remove: async key => { removed = key; },
       get: async defaults => ({ ...defaults, ...settings })
     },
     onChanged: { addListener: fn => { changed = fn; } }
@@ -56,6 +58,7 @@ async function until(check) {
 test("設定隔離、門檻、快取與過期結果", async () => {
   const config = await send({ type: "config" });
   assert.equal(accessLevel, "TRUSTED_CONTEXTS");
+  assert.equal(removed, "apiKey");
   assert.equal(JSON.stringify(config).includes("secret"), false);
   const request = await fresh();
   assert.equal((await send(request)).hide, true);

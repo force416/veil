@@ -5,7 +5,9 @@ const MAX_ATTEMPTS = 3;
 const MAX_BACKOFF = 30000;
 const COOLDOWN = 60000;
 
-const ready = chrome.storage.local.setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" });
+// Drop the TypeSafe key left by older versions so it is never sent to Cloudflare.
+const ready = chrome.storage.local.setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" })
+  .then(() => chrome.storage.local.remove("apiKey"));
 const cache = new Map();
 const pending = new Map();
 const waiting = [];
@@ -41,14 +43,14 @@ async function withSlot(task) {
   }
 }
 
-async function callClef(start, accountId, apiKey, rules, post, reply, author) {
+async function callClef(start, accountId, apiToken, rules, post, reply, author) {
   for (let attempt = 1; ; attempt++) {
     // Settings may change while this request waits for a slot or a backoff.
     if (epoch !== start) throw tagged("", "stale");
     if (authError) throw tagged(authError, "auth");
     if (Date.now() < retryAfter) throw tagged(lastError, "retry");
     try {
-      return await evaluate(accountId, apiKey, rules, post, reply, author);
+      return await evaluate(accountId, apiToken, rules, post, reply, author);
     } catch (error) {
       if (epoch !== start) throw tagged("", "stale");
       lastError = error.message;
@@ -64,10 +66,10 @@ async function callClef(start, accountId, apiKey, rules, post, reply, author) {
   }
 }
 
-function request(key, accountId, apiKey, rules, post, reply, author) {
+function request(key, accountId, apiToken, rules, post, reply, author) {
   if (pending.has(key)) return pending.get(key);
   const start = epoch;
-  const promise = withSlot(() => callClef(start, accountId, apiKey, rules, post, reply, author))
+  const promise = withSlot(() => callClef(start, accountId, apiToken, rules, post, reply, author))
     .then(probability => {
       if (epoch === start) {
         cache.set(key, probability);
@@ -94,13 +96,13 @@ async function handle(message) {
   if (typeof post !== "string" || typeof reply !== "string" || typeof author !== "string" || !reply.trim() || post.length > 12000 || reply.length > 12000 || author.length > 500) {
     return { skipped: true };
   }
-  const key = JSON.stringify([settings.accountId, settings.apiKey, config.rules, post, reply, author]);
+  const key = JSON.stringify([settings.accountId, settings.apiToken, config.rules, post, reply, author]);
   let probability = cache.get(key);
   if (probability === undefined) {
     if (authError) return { error: authError };
     if (Date.now() < retryAfter) return { error: lastError, retryAt: retryAfter };
     try {
-      probability = await request(key, settings.accountId, settings.apiKey, config.rules, post, reply, author);
+      probability = await request(key, settings.accountId, settings.apiToken, config.rules, post, reply, author);
     } catch (error) {
       if (error.kind === "stale") return { skipped: true };
       // Only transient failures tell the page when to ask again; auth and rejected replies wait for new settings.

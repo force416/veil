@@ -1,14 +1,16 @@
+const MODEL = "clef-flash";
+
 export const DEFAULTS = {
   enabled: false,
   accountId: "",
-  apiKey: "",
+  apiToken: "",
   rules: "Commercial ads, promotional spam that tries to drive traffic, or scam replies. Normal discussion and replies that quote an ad to criticize it don't count.",
   threshold: 0.85
 };
 
 export function publicSettings(settings) {
   return {
-    enabled: settings.enabled === true && Boolean(settings.accountId) && Boolean(settings.apiKey) && Boolean(settings.rules?.trim()),
+    enabled: settings.enabled === true && Boolean(settings.accountId) && Boolean(settings.apiToken) && Boolean(settings.rules?.trim()),
     rules: settings.rules,
     threshold: settings.threshold
   };
@@ -16,7 +18,7 @@ export function publicSettings(settings) {
 
 export function buildRequest(rules, post, reply, author = "") {
   return {
-    model: "clef-flash",
+    model: MODEL,
     state: { post, reply, author },
     questions: {
       hide: {
@@ -34,14 +36,15 @@ export function buildRequest(rules, post, reply, author = "") {
   };
 }
 
-// kind: "retry" = transient (backoff and retry), "auth" = bad key (stop until settings change),
+// kind: "retry" = transient (backoff and retry), "auth" = bad credentials (stop until settings change),
 // "reject" = this reply only (do not retry).
 function clefError(message, kind, retryAfterMs = 0) {
   return Object.assign(new Error(message), { kind, retryAfterMs });
 }
 
 export function classifyStatus(status) {
-  if (status === 401 || status === 403) return "auth";
+  // A 404 means the Account ID doesn't route (Cloudflare error 7003).
+  if (status === 401 || status === 403 || status === 404) return "auth";
   if (status === 408 || status === 429 || status >= 500) return "retry";
   return "reject";
 }
@@ -58,6 +61,16 @@ export function backoffDelay(attempt, retryAfterMs = 0) {
   return Math.max(retryAfterMs, 1000 * 2 ** (attempt - 1) * (1 + Math.random() * 0.25));
 }
 
+// Cloudflare explains failures in an {errors: [{code, message}]} envelope.
+async function errorDetail(response) {
+  try {
+    const error = (await response.json()).errors[0];
+    return ` (${error.code}: ${error.message})`;
+  } catch {
+    return "";
+  }
+}
+
 export function parseProbability(body) {
   const answer = body?.result?.answers?.hide;
   if (answer?.type !== "noul" || !Number.isFinite(answer.noul) || answer.noul < 0 || answer.noul > 1) {
@@ -66,22 +79,23 @@ export function parseProbability(body) {
   return answer.noul;
 }
 
-export async function evaluate(accountId, apiKey, rules, post, reply, author = "", fetcher = fetch) {
+export async function evaluate(accountId, apiToken, rules, post, reply, author = "", fetcher = fetch) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   let response;
   let body;
   try {
-    response = await fetcher(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/@cf/cloudflare/clef-flash`, {
+    response = await fetcher(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/@cf/cloudflare/${MODEL}`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${apiToken}`, "Content-Type": "application/json" },
       body: JSON.stringify(buildRequest(rules, post, reply, author)),
       signal: controller.signal
     });
     if (!response.ok) {
       const kind = classifyStatus(response.status);
       const hint = kind === "auth" ? "check your Account ID and API Token" : "reply kept";
-      throw clefError(`Clef HTTP ${response.status}, ${hint}.`, kind, parseRetryAfter(response.headers?.get?.("retry-after")));
+      const detail = await errorDetail(response);
+      throw clefError(`Clef HTTP ${response.status}${detail}, ${hint}.`, kind, parseRetryAfter(response.headers?.get?.("retry-after")));
     }
     body = await response.json();
   } catch (error) {
