@@ -6,12 +6,12 @@ let changed;
 let accessLevel;
 let calls = 0;
 let respond;
-const settings = { enabled: true, apiKey: "secret", rules: "ads", threshold: 0.85, revision: 1 };
+const settings = { enabled: true, accountId: "acct", apiKey: "secret", rules: "ads", threshold: 0.85, revision: 1 };
 const response = (status, noul = 0.9, headers = {}) => ({
   ok: status === 200,
   status,
   headers: { get: name => headers[name.toLowerCase()] ?? null },
-  json: async () => ({ answers: { hide: { type: "noul", noul } } })
+  json: async () => ({ result: { answers: { hide: { type: "noul", noul } } }, success: true })
 });
 globalThis.chrome = {
   storage: {
@@ -124,7 +124,7 @@ test("429 的 retry-after 過長時進入冷卻，並回傳重試時間", async 
 test("401 停止所有請求直到設定變更，且不提供重試時間", async () => {
   let request = await fresh(() => response(401));
   const result = await send(request);
-  assert.match(result.error, /401.*API Key/);
+  assert.match(result.error, /401.*API Token/);
   assert.equal(result.retryAt, undefined);
   assert.match((await send({ ...request, reply: "another" })).error, /401/);
   assert.equal(calls, 1);

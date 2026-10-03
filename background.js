@@ -28,7 +28,7 @@ chrome.storage.onChanged.addListener(changes => {
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const tagged = (message, kind) => Object.assign(new Error(message), { kind });
 
-// Caps Jev requests across all tabs. A finishing task hands its slot directly to the next waiter.
+// Caps Clef requests across all tabs. A finishing task hands its slot directly to the next waiter.
 async function withSlot(task) {
   if (active < MAX_CONCURRENT) active++;
   else await new Promise(resolve => waiting.push(resolve));
@@ -41,14 +41,14 @@ async function withSlot(task) {
   }
 }
 
-async function callJev(start, apiKey, rules, post, reply, author) {
+async function callClef(start, accountId, apiKey, rules, post, reply, author) {
   for (let attempt = 1; ; attempt++) {
     // Settings may change while this request waits for a slot or a backoff.
     if (epoch !== start) throw tagged("", "stale");
     if (authError) throw tagged(authError, "auth");
     if (Date.now() < retryAfter) throw tagged(lastError, "retry");
     try {
-      return await evaluate(apiKey, rules, post, reply, author);
+      return await evaluate(accountId, apiKey, rules, post, reply, author);
     } catch (error) {
       if (epoch !== start) throw tagged("", "stale");
       lastError = error.message;
@@ -64,10 +64,10 @@ async function callJev(start, apiKey, rules, post, reply, author) {
   }
 }
 
-function request(key, apiKey, rules, post, reply, author) {
+function request(key, accountId, apiKey, rules, post, reply, author) {
   if (pending.has(key)) return pending.get(key);
   const start = epoch;
-  const promise = withSlot(() => callJev(start, apiKey, rules, post, reply, author))
+  const promise = withSlot(() => callClef(start, accountId, apiKey, rules, post, reply, author))
     .then(probability => {
       if (epoch === start) {
         cache.set(key, probability);
@@ -94,13 +94,13 @@ async function handle(message) {
   if (typeof post !== "string" || typeof reply !== "string" || typeof author !== "string" || !reply.trim() || post.length > 12000 || reply.length > 12000 || author.length > 500) {
     return { skipped: true };
   }
-  const key = JSON.stringify([settings.apiKey, config.rules, post, reply, author]);
+  const key = JSON.stringify([settings.accountId, settings.apiKey, config.rules, post, reply, author]);
   let probability = cache.get(key);
   if (probability === undefined) {
     if (authError) return { error: authError };
     if (Date.now() < retryAfter) return { error: lastError, retryAt: retryAfter };
     try {
-      probability = await request(key, settings.apiKey, config.rules, post, reply, author);
+      probability = await request(key, settings.accountId, settings.apiKey, config.rules, post, reply, author);
     } catch (error) {
       if (error.kind === "stale") return { skipped: true };
       // Only transient failures tell the page when to ask again; auth and rejected replies wait for new settings.

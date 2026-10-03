@@ -8,12 +8,14 @@
 </head>
 <body>
   <main>
-    <header><span class="mark">VEIL</span><h1>Keep your attention on the good replies.</h1><p>Let Jev filter text replies on X based on your own rules.</p></header>
+    <header><span class="mark">VEIL</span><h1>Keep your attention on the good replies.</h1><p>Let Clef filter text replies on X based on your own rules.</p></header>
     <form id="settings">
       <label class="switch"><input id="enabled" type="checkbox" role="switch" aria-describedby="enabledHint"> Filter replies</label>
       <p id="enabledHint" class="hint">On hides matching replies. Off shows the original replies. Saves as soon as you flip it.</p>
-      <label for="apiKey">TypeSafe API Key</label>
-      <input id="apiKey" type="password" autocomplete="off" placeholder="Paste your API key">
+      <label for="accountId">Cloudflare Account ID</label>
+      <input id="accountId" type="text" autocomplete="off" spellcheck="false" placeholder="Paste your account ID">
+      <label for="apiKey">Cloudflare Workers AI API Token</label>
+      <input id="apiKey" type="password" autocomplete="off" placeholder="Paste your API token">
       <label for="rules">What do you want to hide?</label>
       <textarea id="rules" rows="5" maxlength="4000" required></textarea>
       <p class="hint">Describe it in plain language. You can add exceptions too, e.g. hide sales pitches but keep replies that criticize them.</p>
@@ -23,7 +25,7 @@
       <button type="submit">Save settings</button>
       <p id="message" role="status"></p>
     </form>
-    <footer>When enabled, the post and reply text you view, along with each reply author's display name and handle, is sent to TypeSafe, which may incur API charges. Your key is stored locally in the extension and is not synced. Replies are only hidden on the current page; nothing is deleted from X. Turning filtering off shows them again.</footer>
+    <footer>When enabled, the post and reply text you view, along with each reply author's display name and handle, is sent to Cloudflare Workers AI, which may incur API charges. Your token is stored locally in the extension and is not synced. Replies are only hidden on the current page; nothing is deleted from X. Turning filtering off shows them again.</footer>
   </main>
   <script type="module" src="options.js"></script>
 </body>

@@ -27,13 +27,14 @@ form.addEventListener("submit", async event => {
   event.preventDefault();
   const settings = {
     enabled: fields.enabled.checked,
+    accountId: fields.accountId.value.trim(),
     apiKey: fields.apiKey.value.trim(),
     rules: fields.rules.value.trim(),
     threshold: Number(fields.threshold.value)
   };
-  if (!settings.rules || (settings.enabled && !settings.apiKey)) {
+  if (!settings.rules || (settings.enabled && !(settings.accountId && settings.apiKey))) {
     if (!event.submitter) fields.enabled.checked = !settings.enabled;
-    message.textContent = "Enter your filter rules. An API key is also required when filtering is enabled.";
+    message.textContent = "Enter your filter rules. An Account ID and API token are also required when filtering is enabled.";
     return;
   }
   try {

@@ -1,5 +1,6 @@
 export const DEFAULTS = {
   enabled: false,
+  accountId: "",
   apiKey: "",
   rules: "Commercial ads, promotional spam that tries to drive traffic, or scam replies. Normal discussion and replies that quote an ad to criticize it don't count.",
   threshold: 0.85
@@ -7,7 +8,7 @@ export const DEFAULTS = {
 
 export function publicSettings(settings) {
   return {
-    enabled: settings.enabled === true && Boolean(settings.apiKey) && Boolean(settings.rules?.trim()),
+    enabled: settings.enabled === true && Boolean(settings.accountId) && Boolean(settings.apiKey) && Boolean(settings.rules?.trim()),
     rules: settings.rules,
     threshold: settings.threshold
   };
@@ -15,7 +16,7 @@ export function publicSettings(settings) {
 
 export function buildRequest(rules, post, reply, author = "") {
   return {
-    model: "jev-latest",
+    model: "clef-flash",
     state: { post, reply, author },
     questions: {
       hide: {
@@ -35,7 +36,7 @@ export function buildRequest(rules, post, reply, author = "") {
 
 // kind: "retry" = transient (backoff and retry), "auth" = bad key (stop until settings change),
 // "reject" = this reply only (do not retry).
-function jevError(message, kind, retryAfterMs = 0) {
+function clefError(message, kind, retryAfterMs = 0) {
   return Object.assign(new Error(message), { kind, retryAfterMs });
 }
 
@@ -58,20 +59,20 @@ export function backoffDelay(attempt, retryAfterMs = 0) {
 }
 
 export function parseProbability(body) {
-  const answer = body?.answers?.hide;
+  const answer = body?.result?.answers?.hide;
   if (answer?.type !== "noul" || !Number.isFinite(answer.noul) || answer.noul < 0 || answer.noul > 1) {
-    throw jevError("Jev returned an invalid response. Reply kept.", "reject");
+    throw clefError("Clef returned an invalid response. Reply kept.", "reject");
   }
   return answer.noul;
 }
 
-export async function evaluate(apiKey, rules, post, reply, author = "", fetcher = fetch) {
+export async function evaluate(accountId, apiKey, rules, post, reply, author = "", fetcher = fetch) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   let response;
   let body;
   try {
-    response = await fetcher("https://api.typesafe.ai/v1/systemone", {
+    response = await fetcher(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/@cf/cloudflare/clef-flash`, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify(buildRequest(rules, post, reply, author)),
@@ -79,15 +80,15 @@ export async function evaluate(apiKey, rules, post, reply, author = "", fetcher 
     });
     if (!response.ok) {
       const kind = classifyStatus(response.status);
-      const hint = kind === "auth" ? "check your API Key" : "reply kept";
-      throw jevError(`Jev HTTP ${response.status}, ${hint}.`, kind, parseRetryAfter(response.headers?.get?.("retry-after")));
+      const hint = kind === "auth" ? "check your Account ID and API Token" : "reply kept";
+      throw clefError(`Clef HTTP ${response.status}, ${hint}.`, kind, parseRetryAfter(response.headers?.get?.("retry-after")));
     }
     body = await response.json();
   } catch (error) {
     if (error.kind) throw error;
-    if (error.name === "AbortError") throw jevError("Jev request timed out. Reply kept.", "retry");
-    if (!response) throw jevError("Couldn't reach Jev. Reply kept.", "retry");
-    throw jevError("Jev returned an invalid response. Reply kept.", "reject");
+    if (error.name === "AbortError") throw clefError("Clef request timed out. Reply kept.", "retry");
+    if (!response) throw clefError("Couldn't reach Clef. Reply kept.", "retry");
+    throw clefError("Clef returned an invalid response. Reply kept.", "reject");
   } finally {
     clearTimeout(timeout);
   }
