@@ -11,6 +11,7 @@
   let timeline = null;
   let ancestors = new Set();
   let initialHeadings = new Set();
+  let revealed = new Set();
   let notice;
 
   function restore() {
@@ -25,6 +26,7 @@
     timeline = null;
     ancestors.clear();
     initialHeadings.clear();
+    revealed.clear();
     post = "";
   }
 
@@ -96,13 +98,23 @@
         .then(result => {
           if (token !== generation || path !== location.pathname || !article.isConnected || JSON.stringify(readArticle(article)) !== signature) return;
           if (result?.retryAt) records.set(article, { signature, retryAt: result.retryAt });
-          if (result?.hide && result.revision === config.revision) article.setAttribute("data-veil-hidden", "true");
+          if (result?.hide && result.revision === config.revision) article.setAttribute("data-veil-hidden", revealed.has(value.id) ? "revealed" : "true");
           showStatus(result?.error);
         })
         .catch(() => showStatus("Connection failed. Reply kept."))
         .finally(() => { inFlight--; });
     }
   }
+
+  // Capture phase runs before X's handlers, so the first click only removes the mask.
+  window.addEventListener("click", event => {
+    const article = event.target.closest?.('article[data-veil-hidden="true"]');
+    if (!article) return;
+    event.preventDefault();
+    event.stopPropagation();
+    article.setAttribute("data-veil-hidden", "revealed");
+    revealed.add(readArticle(article).id);
+  }, true);
 
   // Polling also detects SPA navigation and virtualized/reused tweet elements.
   setInterval(scan, 500);

@@ -1,4 +1,11 @@
-article[data-veil-hidden="true"] { display: none !important; }
+/* A pseudo-element mask avoids inserting nodes into X's React tree. */
+article[data-veil-hidden="true"] { position: relative; isolation: isolate; cursor: pointer; max-height: 80px; overflow: hidden; }
+article[data-veil-hidden="true"]::after {
+  content: "Hidden by Veil · Click to show";
+  position: absolute; inset: 0; z-index: 2147483647;
+  display: flex; align-items: center; justify-content: center;
+  background: #536471; color: #f7f9f9; font: 13px/1.5 system-ui;
+}
 #veil-status {
   position: fixed; bottom: 18px; right: 18px; z-index: 2147483647;
   padding: 10px 14px; border: 1px solid #536471; border-radius: 12px;

@@ -33,7 +33,25 @@ try {
   assert.equal(await page.locator("#tweet-99").isVisible(), true);
   assert.equal(await page.locator("#tweet-102").isVisible(), true);
   assert.equal(await page.locator("#tweet-900").isVisible(), true);
-  assert.equal(await page.locator("#tweet-101").isVisible(), false);
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector("#tweet-101"), "::after").content), '"Hidden by Veil · Click to show"');
+  await page.evaluate(() => document.querySelector("#tweet-101 [data-testid=tweetText]").style.height = "500px");
+  assert.equal(await page.evaluate(() => document.querySelector("#tweet-101").offsetHeight), 80);
+
+  // The first click removes the mask without reaching X's handlers; the reveal survives a remount.
+  await page.evaluate(() => {
+    window.xClicks = 0;
+    document.querySelector("section").addEventListener("click", () => window.xClicks++);
+  });
+  await page.locator("#tweet-101").click();
+  assert.equal(await page.evaluate(() => document.querySelector("#tweet-101").dataset.veilHidden), "revealed");
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector("#tweet-101"), "::after").content), "none");
+  assert.equal(await page.evaluate(() => document.querySelector("#tweet-101").offsetHeight > 500), true);
+  await page.evaluate(() => document.querySelector("#tweet-101 [data-testid=tweetText]").style.height = "");
+  assert.equal(await page.evaluate(() => window.xClicks), 0);
+  await page.locator("#tweet-101").click();
+  assert.equal(await page.evaluate(() => window.xClicks), 1);
+  await page.evaluate(html => document.querySelector("section").insertAdjacentHTML("beforeend", html), article(101, "ad").replace('id="tweet-101"', 'id="tweet-101b"'));
+  await page.waitForFunction(() => document.querySelector("#tweet-101b").dataset.veilHidden === "revealed");
 
   // Root virtualizes away; new replies still use the previously captured main text.
   await page.evaluate(html => {
@@ -77,7 +95,7 @@ try {
   await page.evaluate(() => { window.config.enabled = false; window.config.revision = "two"; });
   await page.waitForFunction(() => document.querySelectorAll('[data-veil-hidden]').length === 0);
   assert.equal(await page.locator("#tweet-201").isVisible(), true);
-  console.log("PASS: main/ancestor/sidebar protection, filtering, virtualization, recycled DOM, SPA stale response, recommendation boundary, disable restore");
+  console.log("PASS: main/ancestor/sidebar protection, filtering, click to reveal, virtualization, recycled DOM, SPA stale response, recommendation boundary, disable restore");
 
   await page.goto("https://x.com/options-preview");
   await page.setContent(await (await import("node:fs/promises")).readFile("options.html", "utf8"));
