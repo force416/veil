@@ -29,11 +29,30 @@ try {
   await page.addScriptTag({ path: "content.js" });
   await page.waitForFunction(() => document.querySelector("#tweet-101").dataset.veilHidden === "true");
   await page.waitForFunction(() => window.calls.length === 2);
-  assert.equal(await page.locator("#tweet-100").isVisible(), true);
-  assert.equal(await page.locator("#tweet-99").isVisible(), true);
-  assert.equal(await page.locator("#tweet-102").isVisible(), true);
-  assert.equal(await page.locator("#tweet-900").isVisible(), true);
-  assert.equal(await page.locator("#tweet-101").isVisible(), false);
+  assert.equal(await page.locator("#tweet-100").getAttribute("data-veil-hidden"), null);
+  assert.equal(await page.locator("#tweet-99").getAttribute("data-veil-hidden"), null);
+  assert.equal(await page.locator("#tweet-102").getAttribute("data-veil-hidden"), null);
+  assert.equal(await page.locator("#tweet-900").getAttribute("data-veil-hidden"), null);
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector("#tweet-101"), "::after").content), '"Hidden by Veil · Click to show"');
+  await page.evaluate(() => document.querySelector("#tweet-101 [data-testid=tweetText]").style.height = "500px");
+  assert.equal(await page.evaluate(() => document.querySelector("#tweet-101").offsetHeight), 80);
+  assert.equal(await page.locator("#tweet-101 [data-testid=tweetText]").isVisible(), false);
+
+  // The first click removes the mask without reaching X's handlers; the reveal survives a remount.
+  await page.evaluate(() => {
+    window.xClicks = 0;
+    document.querySelector("section").addEventListener("click", () => window.xClicks++);
+  });
+  await page.locator("#tweet-101").click();
+  assert.equal(await page.evaluate(() => document.querySelector("#tweet-101").dataset.veilHidden), "revealed");
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector("#tweet-101"), "::after").content), "none");
+  assert.equal(await page.evaluate(() => document.querySelector("#tweet-101").offsetHeight > 500), true);
+  await page.evaluate(() => document.querySelector("#tweet-101 [data-testid=tweetText]").style.height = "");
+  assert.equal(await page.evaluate(() => window.xClicks), 0);
+  await page.locator("#tweet-101").click();
+  assert.equal(await page.evaluate(() => window.xClicks), 1);
+  await page.evaluate(html => document.querySelector("section").insertAdjacentHTML("beforeend", html), article(101, "ad").replace('id="tweet-101"', 'id="tweet-101b"'));
+  await page.waitForFunction(() => document.querySelector("#tweet-101b").dataset.veilHidden === "revealed");
 
   // Root virtualizes away; new replies still use the previously captured main text.
   await page.evaluate(html => {
@@ -41,6 +60,28 @@ try {
     document.querySelector("section").insertAdjacentHTML("beforeend", html);
   }, article(103, "ad"));
   await page.waitForFunction(() => document.querySelector("#tweet-103").dataset.veilHidden === "true");
+
+  // A masked video cannot autoplay. Keyboard shortcuts stay blocked until Enter reveals the reply.
+  const paused = await page.evaluate(async () => {
+    const video = document.createElement("video");
+    document.querySelector("#tweet-103").append(video);
+    video.play().catch(() => {});
+    await new Promise(resolve => video.addEventListener("pause", resolve, { once: true }));
+    return video.paused;
+  });
+  assert.equal(paused, true);
+  await page.evaluate(() => {
+    window.xKeys = [];
+    document.querySelector("section").addEventListener("keydown", event => window.xKeys.push(event.key));
+    document.querySelector("#tweet-103").tabIndex = 0;
+    document.querySelector("#tweet-103").focus();
+  });
+  await page.keyboard.press("l");
+  await page.keyboard.press("j");
+  assert.deepEqual(await page.evaluate(() => window.xKeys), ["j"]);
+  await page.keyboard.press("Enter");
+  assert.equal(await page.evaluate(() => document.querySelector("#tweet-103").dataset.veilHidden), "revealed");
+  assert.deepEqual(await page.evaluate(() => window.xKeys), ["j"]);
   assert.equal(await page.evaluate(() => window.calls.at(-1).post), "main");
 
   // Emoji images keep their alt text, and the author name and handle are sent without the timestamp.
@@ -64,7 +105,7 @@ try {
   await page.waitForFunction(() => Boolean(window.resolveDelayed));
   await page.evaluate(() => { history.pushState({}, "", "/home"); window.resolveDelayed(); });
   await page.waitForFunction(() => document.querySelectorAll('[data-veil-hidden]').length === 0);
-  assert.equal(await page.locator("#tweet-105").isVisible(), true);
+  assert.equal(await page.locator("#tweet-105").getAttribute("data-veil-hidden"), null);
 
   // Recommendations with a section heading are excluded; disabling restores replies.
   await page.evaluate(html => {
@@ -72,12 +113,12 @@ try {
     history.pushState({}, "", "/user/status/200");
   }, `${article(200, "main two")}${article(201, "ad")}<h2>Discover more</h2>${article(202, "ad recommended")}`);
   await page.waitForFunction(() => document.querySelector("#tweet-201").dataset.veilHidden === "true");
-  assert.equal(await page.locator("#tweet-202").isVisible(), true);
+  assert.equal(await page.locator("#tweet-202").getAttribute("data-veil-hidden"), null);
   assert.equal(await page.evaluate(() => window.calls.some(call => call.reply === "ad recommended")), false);
   await page.evaluate(() => { window.config.enabled = false; window.config.revision = "two"; });
   await page.waitForFunction(() => document.querySelectorAll('[data-veil-hidden]').length === 0);
-  assert.equal(await page.locator("#tweet-201").isVisible(), true);
-  console.log("PASS: main/ancestor/sidebar protection, filtering, virtualization, recycled DOM, SPA stale response, recommendation boundary, disable restore");
+  assert.equal(await page.locator("#tweet-201").getAttribute("data-veil-hidden"), null);
+  console.log("PASS: main/ancestor/sidebar protection, filtering, click and keyboard reveal, video pause, virtualization, recycled DOM, SPA stale response, recommendation boundary, disable restore");
 
   await page.goto("https://x.com/options-preview");
   await page.setContent(await (await import("node:fs/promises")).readFile("options.html", "utf8"));
