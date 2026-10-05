@@ -1,5 +1,7 @@
 /* A pseudo-element mask avoids inserting nodes into X's React tree. */
-article[data-veil-hidden="true"] { position: relative; isolation: isolate; cursor: pointer; max-height: 80px; overflow: hidden; }
+article[data-veil-hidden="true"] { position: relative; isolation: isolate; cursor: pointer; max-height: 80px; overflow: clip; }
+/* Hidden descendants leave the tab order, find-in-page, and the accessibility tree. */
+article[data-veil-hidden="true"] * { visibility: hidden !important; }
 article[data-veil-hidden="true"]::after {
   content: "Hidden by Veil · Click to show";
   position: absolute; inset: 0; z-index: 2147483647;

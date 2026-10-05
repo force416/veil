@@ -11,7 +11,7 @@ A Chrome extension that uses [Cloudflare Clef](https://developers.cloudflare.com
 
 Example condition: *"Product promotion, invitations to investment groups, and scams. Keep normal discussion and replies that quote a scam to warn others."*
 
-Setting changes apply to open tabs within about two seconds, without reloading. Turning the switch off stops filtering and shows the original replies. Turning it back on reuses judgments already cached by the background worker, so replies that were already checked aren't sent again. Filtered replies are covered by a local grey mask; click one to show it again for the rest of the visit to that post. Nothing is deleted or reported on X.
+Setting changes apply to open tabs within about two seconds, without reloading. Turning the switch off stops filtering and shows the original replies. Turning it back on reuses judgments already cached by the background worker, so replies that were already checked aren't sent again. Filtered replies are covered by a local grey mask; click one, or focus it and press Enter, to show it again until you leave the post or change settings. Masked text cannot be focused, found with find-in-page, or read by screen readers, and masked videos do not autoplay. Nothing is deleted or reported on X.
 
 ## Behavior and limitations
 

@@ -98,7 +98,11 @@
         .then(result => {
           if (token !== generation || path !== location.pathname || !article.isConnected || JSON.stringify(readArticle(article)) !== signature) return;
           if (result?.retryAt) records.set(article, { signature, retryAt: result.retryAt });
-          if (result?.hide && result.revision === config.revision) article.setAttribute("data-veil-hidden", revealed.has(value.id) ? "revealed" : "true");
+          if (result?.hide && result.revision === config.revision) {
+            const state = revealed.has(value.id) ? "revealed" : "true";
+            article.setAttribute("data-veil-hidden", state);
+            if (state === "true") article.querySelectorAll("video").forEach(video => video.pause());
+          }
           showStatus(result?.error);
         })
         .catch(() => showStatus("Connection failed. Reply kept."))
@@ -106,14 +110,30 @@
     }
   }
 
-  // Capture phase runs before X's handlers, so the first click only removes the mask.
-  window.addEventListener("click", event => {
-    const article = event.target.closest?.('article[data-veil-hidden="true"]');
-    if (!article) return;
+  function reveal(article, event) {
     event.preventDefault();
     event.stopPropagation();
     article.setAttribute("data-veil-hidden", "revealed");
     revealed.add(readArticle(article).id);
+  }
+
+  // Capture phase runs before X's handlers, so the first click only removes the mask.
+  window.addEventListener("click", event => {
+    const article = event.target.closest?.('article[data-veil-hidden="true"]');
+    if (article) reveal(article, event);
+  }, true);
+
+  // Enter or Space reveals a focused masked reply. Other X shortcuts (like, reply, repost) are blocked; Tab, j and k still move on.
+  window.addEventListener("keydown", event => {
+    const article = event.target.closest?.('article[data-veil-hidden="true"]');
+    if (!article || ["Tab", "j", "k"].includes(event.key)) return;
+    if (event.key === "Enter" || event.key === " ") reveal(article, event);
+    else event.stopPropagation();
+  }, true);
+
+  // The mask hides media, but X's autoplay still sees it in the viewport.
+  document.addEventListener("play", event => {
+    if (event.target.closest('article[data-veil-hidden="true"]')) event.target.pause();
   }, true);
 
   // Polling also detects SPA navigation and virtualized/reused tweet elements.
