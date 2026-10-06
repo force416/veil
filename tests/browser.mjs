@@ -35,7 +35,20 @@ try {
   assert.equal(await page.locator("#tweet-900").getAttribute("data-veil-hidden"), null);
   assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector("#tweet-101"), "::after").content), '"Hidden by Veil · Click to show"');
   await page.evaluate(() => document.querySelector("#tweet-101 [data-testid=tweetText]").style.height = "500px");
-  assert.equal(await page.evaluate(() => document.querySelector("#tweet-101").offsetHeight), 80);
+  assert.equal(await page.evaluate(() => document.querySelector("#tweet-101").offsetHeight), 70);
+  // The mask follows the page background: dark by default, light on a light page, and back.
+  const maskColors = () => page.evaluate(() => {
+    const style = getComputedStyle(document.querySelector("#tweet-101"), "::after");
+    return [style.backgroundColor, style.borderTopColor, style.color];
+  });
+  assert.deepEqual(await maskColors(), ["rgb(22, 24, 29)", "rgb(32, 35, 39)", "rgb(113, 117, 122)"]);
+  await page.evaluate(() => document.body.style.background = "#fff");
+  await page.waitForFunction(() => document.documentElement.dataset.veilTheme === "light");
+  assert.deepEqual(await maskColors(), ["rgb(246, 248, 248)", "rgb(240, 244, 245)", "rgb(82, 99, 111)"]);
+  await page.evaluate(() => document.body.style.background = "#000");
+  await page.waitForFunction(() => document.documentElement.dataset.veilTheme === "dark");
+  assert.deepEqual(await maskColors(), ["rgb(22, 24, 29)", "rgb(32, 35, 39)", "rgb(113, 117, 122)"]);
+  await page.evaluate(() => document.body.style.background = "");
   assert.equal(await page.locator("#tweet-101 [data-testid=tweetText]").isVisible(), false);
 
   // The first click removes the mask without reaching X's handlers; the reveal survives a remount.
@@ -118,7 +131,7 @@ try {
   await page.evaluate(() => { window.config.enabled = false; window.config.revision = "two"; });
   await page.waitForFunction(() => document.querySelectorAll('[data-veil-hidden]').length === 0);
   assert.equal(await page.locator("#tweet-201").getAttribute("data-veil-hidden"), null);
-  console.log("PASS: main/ancestor/sidebar protection, filtering, click and keyboard reveal, video pause, virtualization, recycled DOM, SPA stale response, recommendation boundary, disable restore");
+  console.log("PASS: main/ancestor/sidebar protection, filtering, click and keyboard reveal, video pause, theme colors, virtualization, recycled DOM, SPA stale response, recommendation boundary, disable restore");
 
   await page.goto("https://x.com/options-preview");
   await page.setContent(await (await import("node:fs/promises")).readFile("options.html", "utf8"));

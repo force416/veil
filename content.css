@@ -1,16 +1,27 @@
+/* Values of X's gray-0, gray-50, gray-700 and foreground tokens. content.js sets data-veil-theme from the page background. */
+:root {
+  --veil-surface: hsl(220 12% 10%); --veil-border: hsl(214 10% 14%);
+  --veil-muted: hsl(210 4% 46%); --veil-text: hsl(200 7% 91%);
+}
+:root[data-veil-theme="light"] {
+  --veil-surface: hsl(180 14% 97%); --veil-border: hsl(192 19% 95%);
+  --veil-muted: hsl(206 15% 38%); --veil-text: hsl(210 25% 8%);
+}
 /* A pseudo-element mask avoids inserting nodes into X's React tree. */
-article[data-veil-hidden="true"] { position: relative; isolation: isolate; cursor: pointer; max-height: 80px; overflow: clip; }
+article[data-veil-hidden="true"] { position: relative; cursor: pointer; box-sizing: border-box; height: 70px; overflow: clip; }
 /* Hidden descendants leave the tab order, find-in-page, and the accessibility tree. */
 article[data-veil-hidden="true"] * { visibility: hidden !important; }
+/* Colors and size match X's "This Post is unavailable" box. The font family is inherited from X. */
 article[data-veil-hidden="true"]::after {
   content: "Hidden by Veil · Click to show";
-  position: absolute; inset: 0; z-index: 2147483647;
-  display: flex; align-items: center; justify-content: center;
-  background: #536471; color: #f7f9f9; font: 13px/1.5 system-ui;
+  position: absolute; inset: 12px 16px;
+  display: flex; align-items: center; padding: 0 16px; box-sizing: border-box;
+  border: 1px solid var(--veil-border); border-radius: 16px;
+  background: var(--veil-surface); color: var(--veil-muted); font-size: 15px; line-height: 20px;
 }
 #veil-status {
   position: fixed; bottom: 18px; right: 18px; z-index: 2147483647;
-  padding: 10px 14px; border: 1px solid #536471; border-radius: 12px;
-  background: #15202b; color: #f7f9f9; font: 13px/1.5 system-ui;
+  padding: 10px 14px; border: 1px solid var(--veil-border); border-radius: 12px;
+  background: var(--veil-surface); color: var(--veil-text); font: 13px/1.5 system-ui;
   max-width: 300px; box-shadow: 0 4px 16px #0003; pointer-events: none;
 }
