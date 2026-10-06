@@ -60,7 +60,19 @@
     }
   }
 
+  // X marks its theme differently across app versions; the page background is the stable signal.
+  function syncTheme() {
+    for (const node of [document.body, document.documentElement]) {
+      const rgb = getComputedStyle(node).backgroundColor.match(/^rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)$/);
+      if (!rgb || rgb[4] === "0") continue;
+      const theme = (+rgb[1] + +rgb[2] + +rgb[3]) / 3 > 127 ? "light" : "dark";
+      if (document.documentElement.dataset.veilTheme !== theme) document.documentElement.dataset.veilTheme = theme;
+      return;
+    }
+  }
+
   function scan() {
+    syncTheme();
     const nextThread = statusId(location.pathname);
     if (nextThread !== thread) {
       thread = nextThread;
